@@ -8,7 +8,7 @@ mp_drawing = mp.solutions.drawing_utils
 mesh_drawing_spec = mp_drawing.DrawingSpec(thickness=3, color=(0, 255, 0))
 mark_drawing_spec = mp_drawing.DrawingSpec(thickness=3, circle_radius=3, color=(0, 0, 255))
 
-img_path = 'pose.jpg'
+img_path = 'images/pose.jpg'
 
 with mp_pose.Pose(
     min_detection_confidence=0.3,

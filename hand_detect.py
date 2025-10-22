@@ -8,7 +8,7 @@ mp_drawing = mp.solutions.drawing_utils
 mesh_drawing_spec = mp_drawing.DrawingSpec(thickness=3, color=(0, 255, 0))
 mark_drawing_spec = mp_drawing.DrawingSpec(thickness=3, circle_radius=3, color=(0, 0, 255))
 
-img_path = 'hand.jpg'
+img_path = 'images/hand.jpg'
 
 with mp_hands.Hands(
     max_num_hands=2,

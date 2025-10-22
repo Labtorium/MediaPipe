@@ -7,7 +7,7 @@ mp_drawing = mp.solutions.drawing_utils
 kp_drawing_spec = mp_drawing.DrawingSpec(thickness=3, circle_radius=3, color=(0, 255, 0))
 bbox_drawing_spec = mp_drawing.DrawingSpec(thickness=3, color=(0, 0, 255))
 
-img_path = 'face.jpg'
+img_path = 'images/face.jpg'
 
 with mp_face_detect.FaceDetection(min_detection_confidence=0.5) as face_detection:
     image = cv2.imread(img_path)
