@@ -1,5 +1,10 @@
 import mediapipe as mp
 import cv2
+import numpy as np
+
+THRESH_SLOP = 0
+THRESH_DIST_SPINE = 30
+THRESH_ARM = 40
 
 mp_pose = mp.solutions.pose
 
@@ -29,6 +34,22 @@ def get_keypoint(results, height, width):
     left_ankle_xy = [left_ankle_x, left_ankle_y]
     return left_shoulder_xy, left_elbow_xy, left_wrist_xy, left_hip_xy, left_knee_xy, left_ankle_xy
 
+def calc_distance(x1, y1, x2, y2, x3, y3):
+    u = np.array([x2 - x1, y2 - y1])
+    v = np.array([x3 - x1, y3 - y1])
+    L = abs(np.cross(u, v)) / np.linalg.norm(u)
+    return L
+
+def calc_slope(x1, y1, x2, y2):
+    slope = (y2 - y1) / (x2 - x1)
+    return slope
+
+def is_low_pose(dist_hip, dist_knee, dist_elbow, body_slope):
+    if dist_hip < THRESH_DIST_SPINE and dist_knee < THRESH_DIST_SPINE and dist_elbow > THRESH_ARM and body_slope <= THRESH_SLOP:
+        return True
+    else:
+        return False
+
 
 if __name__ == '__main__':
     cap = cv2.VideoCapture('movies/push-up.mp4')
@@ -36,6 +57,8 @@ if __name__ == '__main__':
     with mp_pose.Pose(
         min_detection_confidence=0.5,
         static_image_mode=False) as pose_detection:
+
+        flg_low = False
 
         while cap.isOpened():
             ret, frame = cap.read()
@@ -52,6 +75,15 @@ if __name__ == '__main__':
                 print('no result')
             else:
                 left_shoulder_xy, left_elbow_xy, left_wrist_xy, left_hip_xy, left_knee_xy, left_ankle_xy = get_keypoint(results, height, width)
+                dist_hip = calc_distance(left_shoulder_xy[0], left_shoulder_xy[1], left_ankle_xy[0], left_ankle_xy[1], left_hip_xy[0], left_hip_xy[1])
+                dist_knee = calc_distance(left_shoulder_xy[0], left_shoulder_xy[1], left_ankle_xy[0], left_ankle_xy[1], left_knee_xy[0], left_knee_xy[1])
+                dist_elbow = calc_distance(left_shoulder_xy[0], left_shoulder_xy[1], left_wrist_xy[0], left_wrist_xy[1], left_elbow_xy[0], left_elbow_xy[1])
+                body_slope = calc_slope(left_shoulder_xy[0], left_shoulder_xy[1], left_ankle_xy[0], left_ankle_xy[1])
+
+                prev_flg = flg_low
+                flg_low = is_low_pose(dist_hip, dist_knee, dist_elbow, body_slope)
+                if prev_flg == False and flg_low == True:
+                    print('low pose')
 
             cv2.imshow('push-up', frame)
             if cv2.waitKey(33) & 0xFF == ord('q'):
