@@ -53,12 +53,14 @@ def is_low_pose(dist_hip, dist_knee, dist_elbow, body_slope):
 
 if __name__ == '__main__':
     cap = cv2.VideoCapture('movies/push-up.mp4')
+    print(cap.get(cv2.CAP_PROP_FRAME_WIDTH), cap.get(cv2.CAP_PROP_FRAME_HEIGHT), cap.get(cv2.CAP_PROP_FPS))
 
     with mp_pose.Pose(
         min_detection_confidence=0.5,
         static_image_mode=False) as pose_detection:
 
         flg_low = False
+        count = 0
 
         while cap.isOpened():
             ret, frame = cap.read()
@@ -83,7 +85,10 @@ if __name__ == '__main__':
                 prev_flg = flg_low
                 flg_low = is_low_pose(dist_hip, dist_knee, dist_elbow, body_slope)
                 if prev_flg == False and flg_low == True:
-                    print('low pose')
+                    count += 1
+                    print('push up detected')
+
+                cv2.putText(frame, 'Push-Up Count: ' + str(count), (20, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv2.LINE_AA)
 
             cv2.imshow('push-up', frame)
             if cv2.waitKey(33) & 0xFF == ord('q'):
