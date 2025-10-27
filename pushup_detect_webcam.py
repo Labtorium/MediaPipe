@@ -52,6 +52,7 @@ def is_low_pose(dist_hip, dist_knee, dist_elbow, body_slope):
 
 
 if __name__ == '__main__':
+    #cap = cv2.VideoCapture(0)  ## For webcam input
     cap = cv2.VideoCapture('movies/push-up.mp4')
     print(cap.get(cv2.CAP_PROP_FRAME_WIDTH), cap.get(cv2.CAP_PROP_FRAME_HEIGHT), cap.get(cv2.CAP_PROP_FPS))
 
@@ -74,7 +75,7 @@ if __name__ == '__main__':
 
             results = pose_detection.process(rgb_frame)
             if not results.pose_landmarks:
-                print('no result')
+                print('No pose landmarks detected')
             else:
                 left_shoulder_xy, left_elbow_xy, left_wrist_xy, left_hip_xy, left_knee_xy, left_ankle_xy = get_keypoint(results, height, width)
                 dist_hip = calc_distance(left_shoulder_xy[0], left_shoulder_xy[1], left_ankle_xy[0], left_ankle_xy[1], left_hip_xy[0], left_hip_xy[1])
@@ -86,7 +87,7 @@ if __name__ == '__main__':
                 flg_low = is_low_pose(dist_hip, dist_knee, dist_elbow, body_slope)
                 if prev_flg == False and flg_low == True:
                     count += 1
-                    print('push up detected')
+                    print('Push-up detected')
 
                 cv2.putText(frame, 'Push-Up Count: ' + str(count), (20, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv2.LINE_AA)
 
