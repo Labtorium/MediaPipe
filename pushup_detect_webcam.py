@@ -2,9 +2,16 @@ import mediapipe as mp
 import cv2
 import numpy as np
 
-THRESH_SLOP = 0
-THRESH_DIST_SPINE = 30
-THRESH_ARM = 40
+BASE_RES_WIDTH = 1920
+BASE_RES_HEIGHT = 1080
+CAM_RES_WIDTH = 3840
+CAM_RES_HEIGHT = 2160
+CAM_FPS = 30
+SCALE_RATIO = int(CAM_RES_WIDTH / BASE_RES_WIDTH)
+
+THRESH_SLOPE = 0.05
+THRESH_DIST_SPINE = 30 * SCALE_RATIO
+THRESH_ARM = 40 * SCALE_RATIO
 
 mp_pose = mp.solutions.pose
 
@@ -41,20 +48,29 @@ def calc_distance(x1, y1, x2, y2, x3, y3):
     return L
 
 def calc_slope(x1, y1, x2, y2):
+    if x2 - x1 == 0:
+        return 9999
     slope = (y2 - y1) / (x2 - x1)
     return slope
 
 def is_low_pose(dist_hip, dist_knee, dist_elbow, body_slope):
-    if dist_hip < THRESH_DIST_SPINE and dist_knee < THRESH_DIST_SPINE and dist_elbow > THRESH_ARM and body_slope <= THRESH_SLOP:
+    if dist_hip < THRESH_DIST_SPINE and dist_knee < THRESH_DIST_SPINE and dist_elbow > THRESH_ARM and body_slope <= THRESH_SLOPE:
         return True
     else:
         return False
 
 
 if __name__ == '__main__':
-    #cap = cv2.VideoCapture(0)  ## For webcam input
-    cap = cv2.VideoCapture('movies/push-up.mp4')
-    print(cap.get(cv2.CAP_PROP_FRAME_WIDTH), cap.get(cv2.CAP_PROP_FRAME_HEIGHT), cap.get(cv2.CAP_PROP_FPS))
+    cap = cv2.VideoCapture(0)  ## For webcam input
+    #cap = cv2.VideoCapture('movies/push-up.mp4')
+    cap.set(cv2.CAP_PROP_FPS, CAM_FPS)
+    cap.set(cv2.CAP_PROP_FRAME_WIDTH, CAM_RES_WIDTH)
+    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, CAM_RES_HEIGHT)
+    width = cap.get(cv2.CAP_PROP_FRAME_WIDTH)
+    height = cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
+    fps = cap.get(cv2.CAP_PROP_FPS)
+    print(f"解像度: {int(width)} x {int(height)}")
+    print(f"フレームレート: {fps:.2f} FPS")
 
     with mp_pose.Pose(
         min_detection_confidence=0.5,
@@ -68,14 +84,15 @@ if __name__ == '__main__':
             if not ret:
                 break
 
-            frame = cv2.resize(frame, dsize=None, fx=0.5, fy=0.5)
-            rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            small_frame = cv2.resize(frame, dsize=None, fx=1/SCALE_RATIO/2, fy=1/SCALE_RATIO/2)
+            rgb_frame = cv2.cvtColor(small_frame, cv2.COLOR_BGR2RGB)
             height = rgb_frame.shape[0]
             width = rgb_frame.shape[1]
 
             results = pose_detection.process(rgb_frame)
             if not results.pose_landmarks:
-                print('No pose landmarks detected')
+                pass
+                #print('No pose landmarks detected')
             else:
                 left_shoulder_xy, left_elbow_xy, left_wrist_xy, left_hip_xy, left_knee_xy, left_ankle_xy = get_keypoint(results, height, width)
                 dist_hip = calc_distance(left_shoulder_xy[0], left_shoulder_xy[1], left_ankle_xy[0], left_ankle_xy[1], left_hip_xy[0], left_hip_xy[1])
@@ -89,7 +106,8 @@ if __name__ == '__main__':
                     count += 1
                     print('Push-up detected')
 
-                cv2.putText(frame, 'Push-Up Count: ' + str(count), (20, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv2.LINE_AA)
+                cv2.putText(frame, 'Push-Up Count: ' + str(count), (20, 90), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 0, 255), 10, cv2.LINE_AA)
+                cv2.putText(frame, 'Push-Up Count: ' + str(count), (20, 90), cv2.FONT_HERSHEY_SIMPLEX, 2, (255, 255, 255), 3, cv2.LINE_AA)
 
             cv2.imshow('push-up', frame)
             if cv2.waitKey(33) & 0xFF == ord('q'):
